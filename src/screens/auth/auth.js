@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -27,6 +28,33 @@ import {
 export default function AuthScreen({ onAuthSuccess }) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('login'); // 'login' | 'register'
+  const scrollViewRef = useRef(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSubscription = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+  const handleScrollToOffset = (yOffset) => {
+    setTimeout(() => {
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: yOffset, animated: true });
+      }
+    }, 120);
+  };
 
   const handleLoginSubmit = (credentials) => {
     if (typeof onAuthSuccess === 'function') {
@@ -57,16 +85,20 @@ export default function AuthScreen({ onAuthSuccess }) {
       />
 
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={[
           styles.pdh24,
           {
             flexGrow: 1,
-            justifyContent: 'space-between',
-            paddingBottom: Math.max(insets.bottom, 24) + 12,
+            paddingBottom:
+              keyboardHeight > 0
+                ? keyboardHeight + 140
+                : Math.max(insets.bottom, 24) + 40,
           },
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         <View>
           {/* Top Brand Header */}
@@ -116,11 +148,13 @@ export default function AuthScreen({ onAuthSuccess }) {
             <LoginForm
               onSubmit={handleLoginSubmit}
               onSwitchToRegister={() => setActiveTab('register')}
+              onScrollToInput={handleScrollToOffset}
             />
           ) : (
             <RegisterForm
               onSubmit={handleRegisterSubmit}
               onSwitchToLogin={() => setActiveTab('login')}
+              onScrollToInput={handleScrollToOffset}
             />
           )}
         </View>

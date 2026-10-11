@@ -1,10 +1,11 @@
 {
-  "name": "SyncDesk_Frontend",
+  "name": "SyncDesk",
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "android": "react-native run-android",
+    "android": "adb reverse tcp:8081 tcp:8081 && adb reverse tcp:3000 tcp:3000 && react-native run-android react-native start",
     "ios": "react-native run-ios",
+    "set-icon": "node scripts/set-icon.js",
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest"
@@ -15,7 +16,9 @@
     "axios": "^1.20.0",
     "react": "19.2.3",
     "react-native": "0.87.1",
-    "react-native-safe-area-context": "^5.5.2"
+    "react-native-image-picker": "^8.2.1",
+    "react-native-safe-area-context": "^5.5.2",
+    "react-native-vector-icons": "^10.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect,useState,} from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -18,17 +18,10 @@ import {
 import { Footer } from '../../components/footer';
 import { useNavigation } from '../../navigation';
 import { colors } from '../../assets/colors/colors';
+import authApi from '../../services/authApi';
+import storage from '../../utils/storage';
 
-/**
- * HomeScreen
- * SyncDesk Main Home Screen matching the reference mockup:
- * - Top header with user avatar, workspace dropdown switcher, notification bell with dot, search
- * - Welcome greeting headline "Good morning, Alex" with subtitle
- * - Warm sand/camel active workspace banner with team icon, channel count, and "Active workspace" green dot
- * - "Recent activity" section with user avatars, actions, #channel badges, and timestamps
- * - "Channels" section with hashtag square badges, channel names, descriptions, and chevrons
- * - Bottom tab navigation footer
- */
+
 export default function HomeScreen({
   workspaceName = 'Engineering Team',
   userName = 'Alex',
@@ -53,6 +46,35 @@ export default function HomeScreen({
       navigation.navigate('channels');
     }
   };
+
+  useEffect(() => {
+    const checkStorage = async () => {
+      const token = await storage.getToken();
+      const user2 = await storage.getUser();
+      console.log('this is user from asyncstrage', user2);
+      console.log('this is token get from asyncsotage', token);
+    };
+    checkStorage();
+  }, []);
+
+    const[user, setUser]=useState(null);
+    const[loading, setLoading]= useState(true);
+  
+    useEffect(()=>{
+      async function featchUser(params) {
+        try {
+           const token = await storage.getToken();
+          const userData= await authApi.getUserProfile(token);
+          setUser(userData);
+        } catch (error) {
+          console.log('could not load profile', error);
+          } finally {
+          setLoading(false);
+      }
+  }
+  featchUser();
+  },[]);
+    const displayName =  user?.userName || user?.data?.userName;
 
   const handleViewAllChannels = () => {
     if (onNavigateTab) {
@@ -137,7 +159,7 @@ export default function HomeScreen({
           />
 
           {/* 2. Welcome Greeting */}
-          <HomeGreeting userName={userName} />
+          <HomeGreeting userName={displayName} />
 
           {/* 3. Active Workspace Banner Card */}
           <HomeWorkspaceCard

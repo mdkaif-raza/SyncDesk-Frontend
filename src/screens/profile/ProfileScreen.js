@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Alert,
   Image,
@@ -22,6 +22,7 @@ import EditProfileScreen from '../EditProfile/EditProfileScreen';
 import NotificationsScreen from '../Notifications/NotificationsScreen';
 import { useNavigation } from '../../navigation';
 import { colors } from '../../assets/colors/colors';
+import { authApi } from '../../services/authApi';
 
 const THEME = {
   bg: colors.screenBg,
@@ -51,15 +52,52 @@ export default function ProfileScreen({
 
   // User Profile State
   const [userProfile, setUserProfile] = useState({
-    fullName: 'Alex Morgan',
-    username: '@alexmorgan',
-    phoneNumber: '+1 212 555 0184',
-    location: 'New York',
-    email: 'alex.morgan@example.com',
+    fullName: 'SyncDesk User',
+    username: '@user',
+    phoneNumber: '',
+    location: '',
+    email: '',
     avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300',
     role: role,
     workspace: workspaceName,
   });
+
+  // Load user data on mount
+  useEffect(() => {
+    async function loadUserData() {
+      // 1. Load instantly from local storage
+      const stored = await authApi.getStoredUser();
+      if (stored) {
+        setUserProfile((prev) => ({
+          ...prev,
+          fullName: stored.fullName || stored.username || stored.name || prev.fullName,
+          username: stored.unique_Id || stored.uniqueId || stored.unique_id || stored.username || prev.username,
+          phoneNumber: stored.phoneNumber || stored.phone || prev.phoneNumber,
+          email: stored.email || prev.email,
+          avatarUrl: stored.profilePicture || stored.profileImage || stored.avatar || stored.avatarUrl || prev.avatarUrl,
+        }));
+      }
+
+      // 2. Refresh live from backend
+      try {
+        const liveUser = await authApi.fetchProfile();
+        if (liveUser) {
+          setUserProfile((prev) => ({
+            ...prev,
+            fullName: liveUser.fullName || liveUser.username || liveUser.name || prev.fullName,
+            username: liveUser.unique_Id || liveUser.uniqueId || liveUser.unique_id || liveUser.username || prev.username,
+            phoneNumber: liveUser.phoneNumber || liveUser.phone || prev.phoneNumber,
+            email: liveUser.email || prev.email,
+            avatarUrl: liveUser.profilePicture || liveUser.profileImage || liveUser.avatar || liveUser.avatarUrl || prev.avatarUrl,
+          }));
+        }
+      } catch (err) {
+        // Fallback silently to cached data if backend route is not yet implemented
+      }
+    }
+
+    loadUserData();
+  }, []);
 
   // Handle Photo Picker Action
   const handlePhotoPicker = () => {
