@@ -11,7 +11,7 @@ import styles from '../../assets/styles/styles';
  * @param {string} props.title - Button label ('Log in' | 'Create account')
  * @param {Function} props.onPress - Press handler
  */
-export default function AuthButton({ title, onPress }) {
+export default function AuthButton({ title, onPress, disabled, loading }) {
   return (
     <Pressable
       style={({ pressed }) => [
@@ -21,11 +21,12 @@ export default function AuthButton({ title, onPress }) {
         {
           backgroundColor: colors.bgAccent || '#132B2C',
           height: 52,
-          opacity: pressed ? 0.9 : 1,
+          opacity: disabled || loading ? 0.6 : pressed ? 0.9 : 1,
         },
       ]}
-      onPress={onPress}
+      onPress={disabled || loading ? undefined : onPress}
       accessibilityRole="button"
+      disabled={disabled || loading}
     >
       <Text
         style={[
@@ -36,7 +37,7 @@ export default function AuthButton({ title, onPress }) {
           },
         ]}
       >
-        {title}
+        {loading ? 'Please wait...' : title}
       </Text>
     </Pressable>
   );

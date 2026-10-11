@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../../assets/colors/colors';
 import { icons } from '../../assets/icons';
 import styles from '../../assets/styles/styles';
 import AuthInput from './AuthInput';
 import AuthButton from './AuthButton';
+import ForgotPasswordModal from './ForgotPasswordModal';
+import { authApi } from '../../services/authApi';
+import { useNavigation } from '../../navigation';
 
 /**
  * LoginForm
@@ -13,16 +16,54 @@ import AuthButton from './AuthButton';
  * @param {Object} props
  * @param {Function} props.onSubmit - Login submission handler
  * @param {Function} props.onSwitchToRegister - Switch to register tab handler
+ * @param {Function} props.onSkip - Skip to home handler
  */
-export default function LoginForm({ onSubmit, onSwitchToRegister }) {
+export default function LoginForm({ onSubmit, onSwitchToRegister, onSkip, onScrollToInput }) {
+  const navigation = useNavigation();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [isForgotPasswordVisible, setIsForgotPasswordVisible] = useState(false);
 
-  const handleSubmit = () => {
-    if (typeof onSubmit === 'function') {
-      onSubmit({ identifier, password, rememberMe });
+  const handleSubmit = async () => {
+    if (!identifier.trim() || !password) {
+      Alert.alert(
+        'Validation Error',
+        'Please enter your email/ID and password',
+      );
+      return;
+    }
+    try {
+      setLoading(true);
+      const isEmail = identifier.includes('@');
+      const payload = {
+        identifier: identifier.trim(),
+        email: identifier.trim().toLowerCase(),
+        username: identifier.trim(),
+        unique_id: identifier.trim(),
+        unique_Id: identifier.trim(),
+        uniqueId: identifier.trim(),
+        password,
+      };
+      const response = await authApi.login(payload);
+      console.log(
+        'this is response from login:',
+        JSON.stringify(response, null, 2),
+      );
+      setLoading(false);
+      if (onSubmit) {
+        onSubmit(response);
+      }
+    } catch (error) {
+      setLoading(false);
+      const apiErrorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        'Login failed';
+      Alert.alert('Login Failed', apiErrorMessage);
     }
   };
 
@@ -36,6 +77,7 @@ export default function LoginForm({ onSubmit, onSwitchToRegister }) {
         onChangeText={setIdentifier}
         keyboardType="email-address"
         autoCapitalize="none"
+        onFocus={() => onScrollToInput?.(50)}
       />
 
       {/* Password */}
@@ -47,16 +89,11 @@ export default function LoginForm({ onSubmit, onSwitchToRegister }) {
         isPassword={true}
         isPasswordVisible={isPasswordVisible}
         onTogglePassword={() => setIsPasswordVisible(!isPasswordVisible)}
+        onFocus={() => onScrollToInput?.(120)}
       />
 
       {/* Remember Me & Forgot Password Row */}
-      <View
-        style={[
-          styles.rowBetween,
-          styles.mt2,
-          styles.mb6,
-        ]}
-      >
+      <View style={[styles.rowBetween, styles.mt2, styles.mb6]}>
         <Pressable
           style={({ pressed }) => [
             styles.row,
@@ -109,14 +146,14 @@ export default function LoginForm({ onSubmit, onSwitchToRegister }) {
           </Text>
         </Pressable>
 
-        <Pressable
-          style={({ pressed }) => [
-            {
-              opacity: pressed ? 0.7 : 1,
-            },
-          ]}
-          onPress={() => {}}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        {/* Forgot Password Pressable */}
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => {
+            console.log('Opening Forgot Password Modal');
+            setIsForgotPasswordVisible(true);
+          }}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Text
             style={[
@@ -129,11 +166,41 @@ export default function LoginForm({ onSubmit, onSwitchToRegister }) {
           >
             Forgot password?
           </Text>
-        </Pressable>
+        </TouchableOpacity>
       </View>
 
       {/* Log in Button */}
-      <AuthButton title="Log in" onPress={handleSubmit} />
+      <AuthButton title="Log in" onPress={handleSubmit} loading={loading} />
+
+      {/* Skip to Home Button */}
+      <Pressable
+        style={({ pressed }) => [
+          styles.center,
+          styles.pdv10,
+          styles.rounded12,
+          {
+            backgroundColor: '#F0EBE1',
+            opacity: pressed ? 0.7 : 1,
+          },
+        ]}
+        onPress={() => {
+          if (typeof onSkip === 'function') {
+            onSkip();
+          } else if (typeof onSubmit === 'function') {
+            onSubmit({});
+          }
+        }}
+      >
+        <Text
+          style={[
+            styles.ts14,
+            styles.semiBold,
+            { color: colors.bgAccent || '#132B2C' },
+          ]}
+        >
+          Skip to Home →
+        </Text>
+      </Pressable>
 
       {/* Divider */}
       <View
@@ -178,12 +245,7 @@ export default function LoginForm({ onSubmit, onSwitchToRegister }) {
       </View>
 
       {/* Footer Switcher */}
-      <View
-        style={[
-          styles.rowCenter,
-          styles.mt14,
-        ]}
-      >
+      <View style={[styles.rowCenter, styles.mt14]}>
         <Text
           style={[
             styles.ts14,
@@ -217,6 +279,13 @@ export default function LoginForm({ onSubmit, onSwitchToRegister }) {
           </Text>
         </Pressable>
       </View>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        visible={isForgotPasswordVisible}
+        onClose={() => setIsForgotPasswordVisible(false)}
+      />
     </View>
   );
 }
+

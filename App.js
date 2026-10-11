@@ -2,7 +2,8 @@
  * SyncDesk Mobile Application Entry Point
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import storage from './src/utils/storage';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationProvider } from './src/navigation';
 import { WorkspaceProvider, useWorkspace } from './src/context/WorkspaceContext';
@@ -21,6 +22,20 @@ function MainAppContent() {
   const [currentFlow, setCurrentFlow] = useState('splash'); // 'splash' | 'onboarding' | 'auth' | 'workspace' | 'app'
   const [currentTab, setCurrentTab] = useState('home'); // 'home' | 'channels' | 'messages' | 'tasks' | 'profile'
   const [workspaceInitialStep, setWorkspaceInitialStep] = useState('welcome');
+  const [hasToken, setHasToken] = useState(false);
+
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const token = await storage.getToken();
+        setHasToken(!!token);
+      } catch (err) {
+        console.warn('Failed to check stored auth token:', err);
+        setHasToken(false);
+      }
+    };
+    checkAuthStatus();
+  }, []);
 
   const {
     activeWorkspaceName,
@@ -50,7 +65,14 @@ function MainAppContent() {
       {currentFlow === 'splash' && (
         <SplashScreen
           durationMs={2000}
-          onSplashComplete={() => setCurrentFlow('onboarding')}
+          onSplashComplete={() => {
+            if (hasToken) {
+              setCurrentFlow('app');
+              setCurrentTab('home');
+            } else {
+              setCurrentFlow('onboarding');
+            }
+          }}
         />
       )}
 
@@ -66,6 +88,10 @@ function MainAppContent() {
             console.log(`Authenticated via ${type}:`, data);
             setWorkspaceInitialStep('welcome');
             setCurrentFlow('workspace');
+          }}
+          onSkip={() => {
+            setCurrentFlow('app');
+            setCurrentTab('home');
           }}
         />
       )}

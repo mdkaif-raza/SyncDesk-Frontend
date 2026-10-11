@@ -1,18 +1,12 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-/**
- * HomeGreeting
- * Welcoming header message matching the reference mockup:
- * - Headline: "Good morning, [Name]"
- * - Subtitle: "Here's what's happening in your workspace."
- */
 export default function HomeGreeting({
-  userName = 'Alex',
+  userName ,
   greetingText,
   subtitleText = "Here's what's happening in your workspace.",
-}) {
-  // Determine greeting based on current local hour if not explicitly supplied
+})
+{
   const greeting =
     greetingText ||
     (() => {

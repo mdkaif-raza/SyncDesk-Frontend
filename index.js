@@ -7,3 +7,5 @@ import App from './App.js';
 import { name as appName } from './app.json';
 
 AppRegistry.registerComponent(appName, () => App);
+AppRegistry.registerComponent('SyncDesk', () => App);
+AppRegistry.registerComponent('SyncDesk_Frontend', () => App);
